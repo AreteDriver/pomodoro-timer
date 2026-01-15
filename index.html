@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>POMODORO // CONTROL STATION</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0a0a0c;
+      --panel-bg: #141418;
+      --panel-border: #2a2a32;
+      --accent-amber: #ff9f1c;
+      --accent-amber-dim: #cc7f16;
+      --accent-green: #00ff88;
+      --accent-red: #ff3366;
+      --text-primary: #e8e8ec;
+      --text-dim: #6a6a7a;
+      --glow-amber: 0 0 20px rgba(255, 159, 28, 0.4);
+      --glow-green: 0 0 20px rgba(0, 255, 136, 0.4);
+      --glow-red: 0 0 20px rgba(255, 51, 102, 0.4);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Share Tech Mono', monospace;
+      background: var(--bg-dark);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-primary);
+      overflow: hidden;
+    }
+
+    /* Scanline overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.1) 2px,
+        rgba(0, 0, 0, 0.1) 4px
+      );
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    /* Vignette effect */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.6) 100%);
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    .control-station {
+      background: var(--panel-bg);
+      border: 2px solid var(--panel-border);
+      border-radius: 8px;
+      padding: 40px;
+      position: relative;
+      box-shadow: 
+        0 0 60px rgba(0, 0, 0, 0.8),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    /* Corner brackets */
+    .control-station::before,
+    .control-station::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--accent-amber);
+    }
+    .control-station::before {
+      top: 10px;
+      left: 10px;
+      border-right: none;
+      border-bottom: none;
+    }
+    .control-station::after {
+      bottom: 10px;
+      right: 10px;
+      border-left: none;
+      border-top: none;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 14px;
+      font-weight: 400;
+      letter-spacing: 8px;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 11px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      box-shadow: var(--glow-green);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .status-dot.work {
+      background: var(--accent-amber);
+      box-shadow: var(--glow-amber);
+    }
+
+    .status-dot.break {
+      background: var(--accent-green);
+      box-shadow: var(--glow-green);
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .timer-display {
+      background: #0c0c0e;
+      border: 1px solid var(--panel-border);
+      border-radius: 4px;
+      padding: 30px 50px;
+      margin-bottom: 30px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* CRT glow effect */
+    .timer-display::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(ellipse at center, rgba(255, 159, 28, 0.03) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .time {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 72px;
+      font-weight: 900;
+      text-align: center;
+      color: var(--accent-amber);
+      text-shadow: var(--glow-amber);
+      letter-spacing: 4px;
+      position: relative;
+    }
+
+    .time.break-mode {
+      color: var(--accent-green);
+      text-shadow: var(--glow-green);
+    }
+
+    .progress-container {
+      margin-bottom: 30px;
+    }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+    }
+
+    .progress-bar {
+      height: 4px;
+      background: var(--panel-border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--accent-amber);
+      box-shadow: var(--glow-amber);
+      transition: width 0.3s ease;
+      border-radius: 2px;
+    }
+
+    .progress-fill.break-mode {
+      background: var(--accent-green);
+      box-shadow: var(--glow-green);
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-bottom: 30px;
+    }
+
+    .btn {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      padding: 14px 28px;
+      border: 1px solid var(--panel-border);
+      background: var(--panel-bg);
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      transition: left 0.4s ease;
+    }
+
+    .btn:hover::before {
+      left: 100%;
+    }
+
+    .btn:hover {
+      border-color: var(--accent-amber);
+      box-shadow: var(--glow-amber);
+    }
+
+    .btn.primary {
+      background: var(--accent-amber);
+      color: var(--bg-dark);
+      border-color: var(--accent-amber);
+    }
+
+    .btn.primary:hover {
+      background: var(--accent-amber-dim);
+      box-shadow: var(--glow-amber);
+    }
+
+    .btn.danger {
+      border-color: var(--accent-red);
+      color: var(--accent-red);
+    }
+
+    .btn.danger:hover {
+      background: var(--accent-red);
+      color: var(--bg-dark);
+      box-shadow: var(--glow-red);
+    }
+
+    .mode-selector {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+
+    .mode-btn {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1px;
+      padding: 10px 16px;
+      border: 1px solid var(--panel-border);
+      background: transparent;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .mode-btn:hover {
+      border-color: var(--text-dim);
+      color: var(--text-primary);
+    }
+
+    .mode-btn.active {
+      border-color: var(--accent-amber);
+      color: var(--accent-amber);
+      box-shadow: var(--glow-amber);
+    }
+
+    .stats-panel {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--panel-border);
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--accent-amber);
+      text-shadow: var(--glow-amber);
+    }
+
+    .stat-label {
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      margin-top: 4px;
+      text-transform: uppercase;
+    }
+
+    /* Animation for starting */
+    @keyframes startGlow {
+      0% { box-shadow: 0 0 20px rgba(255, 159, 28, 0.2); }
+      50% { box-shadow: 0 0 40px rgba(255, 159, 28, 0.4); }
+      100% { box-shadow: 0 0 20px rgba(255, 159, 28, 0.2); }
+    }
+
+    .timer-display.running {
+      animation: startGlow 2s ease-in-out infinite;
+    }
+
+    /* Notification style */
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: var(--panel-bg);
+      border: 1px solid var(--accent-amber);
+      padding: 16px 24px;
+      border-radius: 4px;
+      font-size: 12px;
+      letter-spacing: 1px;
+      box-shadow: var(--glow-amber);
+      transform: translateX(150%);
+      transition: transform 0.3s ease;
+      z-index: 1001;
+    }
+
+    .notification.show {
+      transform: translateX(0);
+    }
+
+    .notification.break-notification {
+      border-color: var(--accent-green);
+      box-shadow: var(--glow-green);
+    }
+  </style>
+</head>
+<body>
+  <div class="control-station">
+    <header class="header">
+      <h1>POMODORO CONTROL STATION</h1>
+      <div class="status-indicator">
+        <span class="status-dot work" id="statusDot"></span>
+        <span id="statusText">WORK SESSION</span>
+      </div>
+    </header>
+
+    <div class="timer-display" id="timerDisplay">
+      <div class="time" id="timeDisplay">25:00</div>
+    </div>
+
+    <div class="progress-container">
+      <div class="progress-label">
+        <span>PROGRESS</span>
+        <span id="progressPercent">0%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+      </div>
+    </div>
+
+    <div class="mode-selector">
+      <button class="mode-btn active" data-minutes="25" data-type="work">POMODORO 25</button>
+      <button class="mode-btn" data-minutes="15" data-type="work">FOCUS 15</button>
+      <button class="mode-btn" data-minutes="50" data-type="work">DEEP 50</button>
+      <button class="mode-btn" data-minutes="5" data-type="break">SHORT BREAK</button>
+      <button class="mode-btn" data-minutes="15" data-type="break">LONG BREAK</button>
+    </div>
+
+    <div class="controls">
+      <button class="btn primary" id="startBtn">START</button>
+      <button class="btn" id="pauseBtn" style="display: none;">PAUSE</button>
+      <button class="btn danger" id="resetBtn">RESET</button>
+    </div>
+
+    <div class="stats-panel">
+      <div class="stat">
+        <div class="stat-value" id="completedSessions">0</div>
+        <div class="stat-label">COMPLETED</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="totalMinutes">0</div>
+        <div class="stat-label">TOTAL MIN</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="currentStreak">0</div>
+        <div class="stat-label">STREAK</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notification" id="notification"></div>
+
+  <script>
+    // State
+    let timeRemaining = 25 * 60;
+    let totalTime = 25 * 60;
+    let isRunning = false;
+    let interval = null;
+    let isBreakMode = false;
+    let stats = loadStats();
+
+    function loadStats() {
+      const saved = localStorage.getItem('pomodoroStats');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+      return { completed: 0, totalMinutes: 0, streak: 0 };
+    }
+
+    function saveStats() {
+      localStorage.setItem('pomodoroStats', JSON.stringify(stats));
+    }
+
+    function requestNotificationPermission() {
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    }
+
+    function sendBrowserNotification(message, isBreak) {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Pomodoro Timer', {
+          body: message,
+          icon: isBreak ? '🌿' : '🍅',
+          tag: 'pomodoro-timer'
+        });
+      }
+    }
+
+    // DOM Elements
+    const timeDisplay = document.getElementById('timeDisplay');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const progressFill = document.getElementById('progressFill');
+    const progressPercent = document.getElementById('progressPercent');
+    const startBtn = document.getElementById('startBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+    const notification = document.getElementById('notification');
+    const modeBtns = document.querySelectorAll('.mode-btn');
+
+    // Format time as MM:SS
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    // Update display
+    function updateDisplay() {
+      timeDisplay.textContent = formatTime(timeRemaining);
+      const progress = ((totalTime - timeRemaining) / totalTime) * 100;
+      progressFill.style.width = `${progress}%`;
+      progressPercent.textContent = `${Math.round(progress)}%`;
+      
+      // Update page title
+      document.title = `${formatTime(timeRemaining)} - ${isBreakMode ? 'BREAK' : 'FOCUS'}`;
+    }
+
+    // Update stats display
+    function updateStats() {
+      document.getElementById('completedSessions').textContent = stats.completed;
+      document.getElementById('totalMinutes').textContent = stats.totalMinutes;
+      document.getElementById('currentStreak').textContent = stats.streak;
+    }
+
+    // Show notification
+    function showNotification(message, isBreak = false) {
+      notification.textContent = message;
+      notification.className = `notification show${isBreak ? ' break-notification' : ''}`;
+      
+      // Play sound
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = ctx.createOscillator();
+      const gain = ctx.createGain();
+      oscillator.connect(gain);
+      gain.connect(ctx.destination);
+      oscillator.frequency.value = isBreak ? 440 : 880;
+      oscillator.type = 'sine';
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+      oscillator.start(ctx.currentTime);
+      oscillator.stop(ctx.currentTime + 0.5);
+
+      setTimeout(() => {
+        notification.classList.remove('show');
+      }, 4000);
+    }
+
+    // Timer tick
+    function tick() {
+      timeRemaining--;
+      updateDisplay();
+
+      if (timeRemaining <= 0) {
+        clearInterval(interval);
+        isRunning = false;
+        timerDisplay.classList.remove('running');
+        
+        if (!isBreakMode) {
+          stats.completed++;
+          stats.totalMinutes += Math.round(totalTime / 60);
+          stats.streak++;
+          saveStats();
+          updateStats();
+          showNotification('SESSION COMPLETE // TAKE A BREAK', true);
+          sendBrowserNotification('Session complete! Take a break.', true);
+        } else {
+          showNotification('BREAK OVER // READY TO FOCUS');
+          sendBrowserNotification('Break over! Ready to focus.', false);
+        }
+        
+        startBtn.textContent = 'START';
+        startBtn.style.display = 'inline-block';
+        pauseBtn.style.display = 'none';
+      }
+    }
+
+    // Start timer
+    function startTimer() {
+      requestNotificationPermission();
+      if (timeRemaining <= 0) {
+        timeRemaining = totalTime;
+      }
+      isRunning = true;
+      timerDisplay.classList.add('running');
+      interval = setInterval(tick, 1000);
+      startBtn.style.display = 'none';
+      pauseBtn.style.display = 'inline-block';
+    }
+
+    // Pause timer
+    function pauseTimer() {
+      isRunning = false;
+      clearInterval(interval);
+      timerDisplay.classList.remove('running');
+      startBtn.textContent = 'RESUME';
+      startBtn.style.display = 'inline-block';
+      pauseBtn.style.display = 'none';
+    }
+
+    // Reset timer
+    function resetTimer() {
+      clearInterval(interval);
+      isRunning = false;
+      timeRemaining = totalTime;
+      timerDisplay.classList.remove('running');
+      startBtn.textContent = 'START';
+      startBtn.style.display = 'inline-block';
+      pauseBtn.style.display = 'none';
+      updateDisplay();
+    }
+
+    // Set mode
+    function setMode(minutes, type) {
+      clearInterval(interval);
+      isRunning = false;
+      totalTime = minutes * 60;
+      timeRemaining = totalTime;
+      isBreakMode = type === 'break';
+      
+      // Update UI styling
+      timeDisplay.className = `time${isBreakMode ? ' break-mode' : ''}`;
+      progressFill.className = `progress-fill${isBreakMode ? ' break-mode' : ''}`;
+      statusDot.className = `status-dot ${isBreakMode ? 'break' : 'work'}`;
+      statusText.textContent = isBreakMode ? 'BREAK TIME' : 'WORK SESSION';
+      
+      timerDisplay.classList.remove('running');
+      startBtn.textContent = 'START';
+      startBtn.style.display = 'inline-block';
+      pauseBtn.style.display = 'none';
+      
+      updateDisplay();
+    }
+
+    // Event Listeners
+    startBtn.addEventListener('click', startTimer);
+    pauseBtn.addEventListener('click', pauseTimer);
+    resetBtn.addEventListener('click', resetTimer);
+
+    modeBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        modeBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        setMode(parseInt(btn.dataset.minutes), btn.dataset.type);
+      });
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (isRunning) {
+          pauseTimer();
+        } else {
+          startTimer();
+        }
+      } else if (e.code === 'KeyR') {
+        resetTimer();
+      }
+    });
+
+    // Initialize
+    updateDisplay();
+    updateStats();
+  </script>
+</body>
+</html>
