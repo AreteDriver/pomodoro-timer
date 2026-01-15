@@ -1,8 +1,9 @@
-const CACHE_NAME = 'pomodoro-v1';
+const CACHE_NAME = 'pomodoro-v2';
 const ASSETS = [
   '/pomodoro-timer/',
   '/pomodoro-timer/index.html',
-  '/pomodoro-timer/manifest.json'
+  '/pomodoro-timer/manifest.json',
+  '/pomodoro-timer/icon.svg'
 ];
 
 self.addEventListener('install', e => {
