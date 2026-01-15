@@ -381,6 +381,25 @@
       border-color: var(--accent-green);
       box-shadow: var(--glow-green);
     }
+
+    .btn-subtle {
+      display: block;
+      margin: 20px auto 0;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 1px;
+      padding: 8px 16px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-subtle:hover {
+      border-color: var(--accent-red);
+      color: var(--accent-red);
+    }
   </style>
 </head>
 <body>
@@ -435,6 +454,8 @@
         <div class="stat-label">STREAK</div>
       </div>
     </div>
+
+    <button class="btn-subtle" id="resetStatsBtn">RESET STATS</button>
   </div>
 
   <div class="notification" id="notification"></div>
@@ -458,6 +479,14 @@
 
     function saveStats() {
       localStorage.setItem('pomodoroStats', JSON.stringify(stats));
+    }
+
+    function resetStats() {
+      if (confirm('Reset all stats?')) {
+        stats = { completed: 0, totalMinutes: 0, streak: 0 };
+        saveStats();
+        updateStats();
+      }
     }
 
     function requestNotificationPermission() {
@@ -627,6 +656,7 @@
     startBtn.addEventListener('click', startTimer);
     pauseBtn.addEventListener('click', pauseTimer);
     resetBtn.addEventListener('click', resetTimer);
+    document.getElementById('resetStatsBtn').addEventListener('click', resetStats);
 
     modeBtns.forEach(btn => {
       btn.addEventListener('click', () => {
