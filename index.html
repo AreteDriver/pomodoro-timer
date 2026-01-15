@@ -317,6 +317,40 @@
       box-shadow: var(--glow-amber);
     }
 
+    .custom-duration {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 30px;
+    }
+
+    .custom-duration input,
+    .custom-duration select {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1px;
+      padding: 10px 12px;
+      border: 1px solid var(--panel-border);
+      background: var(--bg-dark);
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .custom-duration input {
+      width: 60px;
+      text-align: center;
+    }
+
+    .custom-duration input:focus,
+    .custom-duration select:focus {
+      border-color: var(--accent-amber);
+    }
+
+    .custom-duration select {
+      cursor: pointer;
+    }
+
     .stats-panel {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -438,6 +472,15 @@
       <button class="mode-btn" data-minutes="50" data-type="work">DEEP 50</button>
       <button class="mode-btn" data-minutes="5" data-type="break">SHORT BREAK</button>
       <button class="mode-btn" data-minutes="15" data-type="break">LONG BREAK</button>
+    </div>
+
+    <div class="custom-duration">
+      <input type="number" id="customMinutes" min="1" max="120" value="30" placeholder="min">
+      <select id="customType">
+        <option value="work">WORK</option>
+        <option value="break">BREAK</option>
+      </select>
+      <button class="mode-btn" id="customSetBtn">SET</button>
     </div>
 
     <div class="controls">
@@ -680,6 +723,15 @@
     resetBtn.addEventListener('click', resetTimer);
     document.getElementById('resetStatsBtn').addEventListener('click', resetStats);
     document.getElementById('muteBtn').addEventListener('click', toggleMute);
+
+    document.getElementById('customSetBtn').addEventListener('click', () => {
+      const minutes = parseInt(document.getElementById('customMinutes').value);
+      const type = document.getElementById('customType').value;
+      if (minutes >= 1 && minutes <= 120) {
+        modeBtns.forEach(b => b.classList.remove('active'));
+        setMode(minutes, type);
+      }
+    });
 
     modeBtns.forEach(btn => {
       btn.addEventListener('click', () => {
